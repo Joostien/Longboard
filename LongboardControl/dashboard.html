@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Longboard Control</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0f0f0f; color: #e0e0e0;
+    font-family: 'Segoe UI', sans-serif;
+    min-height: 100vh; padding: 24px;
+  }
+  h1 { font-size: 1.6rem; font-weight: 600; color: #fff; margin-bottom: 4px; }
+  .subtitle { color: #555; font-size: 0.85rem; margin-bottom: 24px; }
+
+  .layout { display: grid; grid-template-columns: 380px 1fr; gap: 16px; max-width: 1100px; align-items: start; }
+  .left-col { display: flex; flex-direction: column; gap: 16px; }
+  @media (max-width: 780px) { .layout { grid-template-columns: 1fr; } }
+
+  .card {
+    background: #1a1a1a; border: 1px solid #2a2a2a;
+    border-radius: 12px; padding: 20px; position: relative;
+  }
+  .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .card-title { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #555; }
+
+  /* Default btn */
+  .default-btn {
+    font-size: 0.7rem; font-weight: 700; letter-spacing: 0.06em;
+    padding: 4px 11px; border-radius: 20px; border: 1px solid #333;
+    background: #222; color: #666; cursor: pointer; transition: all 0.2s; text-transform: uppercase;
+  }
+  .default-btn.on { background: #1a3a50; border-color: #4af; color: #4af; }
+
+  /* Sliders */
+  .slider-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .slider-label { font-size: 0.8rem; color: #aaa; width: 120px; flex-shrink: 0; }
+  input[type=range] { flex: 1; accent-color: #4af; height: 4px; cursor: pointer; }
+  input[type=range]:disabled { accent-color: #333; cursor: not-allowed; opacity: 0.4; }
+  .slider-value { font-size: 0.82rem; font-weight: 600; color: #4af; width: 50px; text-align: right; }
+  .slider-value.locked { color: #555; }
+
+  /* Presets */
+  .presets { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 14px; padding-top: 14px; border-top: 1px solid #222; }
+  .preset-btn { background: #222; border: 1px solid #2a2a2a; color: #888; border-radius: 6px; padding: 5px 11px; cursor: pointer; font-size: 0.76rem; transition: all 0.15s; }
+  .preset-btn:hover { border-color: #4af; color: #4af; }
+  .preset-btn.active { background: #1a3a50; border-color: #4af; color: #4af; }
+
+  /* Toggle */
+  .toggle-row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+  .toggle { position: relative; width: 40px; height: 22px; flex-shrink: 0; }
+  .toggle input { display: none; }
+  .toggle-track { position: absolute; inset: 0; background: #333; border-radius: 11px; cursor: pointer; transition: background 0.2s; }
+  .toggle input:checked + .toggle-track { background: #4af; }
+  .toggle-track::after { content: ''; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; background: #fff; border-radius: 50%; transition: left 0.2s; }
+  .toggle input:checked + .toggle-track::after { left: 21px; }
+  .toggle-label { font-size: 0.82rem; color: #aaa; }
+
+  /* Servo display */
+  .servo-grid { display: flex; gap: 10px; }
+  .servo-box { flex: 1; background: #111; border: 1px solid #222; border-radius: 8px; padding: 12px; text-align: center; }
+  .servo-title { font-size: 0.66rem; color: #444; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px; }
+  .indicator { width: 42px; height: 42px; border-radius: 50%; margin: 0 auto 6px; background: #1a1a1a; border: 2px solid #2a2a2a; transition: all 0.3s; display: flex; align-items: center; justify-content: center; font-size: 0.6rem; font-weight: 700; color: #444; }
+  .indicator.on { background: #1a4a1a; border-color: #4f4; color: #4f4; box-shadow: 0 0 12px #4f44; }
+  .gauge-wrap { width: 70px; height: 44px; margin: 0 auto 4px; overflow: visible; }
+  .gauge-wrap svg { display: block; }
+  .servo-angle { font-size: 1rem; font-weight: 700; color: #4af; }
+  .servo-status { font-size: 0.68rem; color: #444; margin-top: 2px; }
+  .speed-display { text-align: center; margin-bottom: 14px; }
+  .speed-big { font-size: 2.6rem; font-weight: 700; color: #fff; line-height: 1; }
+  .speed-unit { font-size: 0.78rem; color: #444; margin-top: 3px; }
+
+  /* Arduino */
+  .connect-btn { width: 100%; padding: 9px; border-radius: 8px; border: 1px solid #2a2a2a; background: #141414; color: #888; font-size: 0.82rem; cursor: pointer; transition: all 0.15s; margin-bottom: 9px; }
+  .connect-btn:hover { border-color: #4af; color: #4af; }
+  .connect-btn.connected { border-color: #4f4; color: #4f4; background: #111e11; }
+  .status-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #444; margin-right: 6px; vertical-align: middle; }
+  .status-dot.on { background: #4f4; }
+  .send-btn { width: 100%; padding: 9px; border-radius: 8px; border: none; background: #4af; color: #000; font-size: 0.82rem; font-weight: 700; cursor: pointer; transition: opacity 0.15s; }
+  .send-btn:hover { opacity: 0.85; }
+  .send-btn:disabled { opacity: 0.25; cursor: not-allowed; }
+  .log { margin-top: 8px; font-size: 0.7rem; color: #444; text-align: center; }
+
+  /* ── Route Intelligence ── */
+  .ri-badge {
+    font-size: 0.65rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+    padding: 3px 9px; border-radius: 10px; border: 1px solid #4af4;
+    background: #1a3a5022; color: #4af9;
+  }
+
+  .ri-section { margin-bottom: 18px; }
+  .ri-section-title { font-size: 0.65rem; color: #444; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid #1e1e1e; }
+
+  .ri-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .ri-input-group { display: flex; flex-direction: column; gap: 4px; }
+  .ri-label { font-size: 0.68rem; color: #555; text-transform: uppercase; letter-spacing: 0.08em; }
+  .ri-input {
+    padding: 8px 10px; border-radius: 7px; border: 1px solid #242424;
+    background: #111; color: #ccc; font-size: 0.82rem; outline: none; width: 100%;
+    transition: border-color 0.15s;
+  }
+  .ri-input:focus { border-color: #4af5; }
+  .ri-input.auto { color: #4af; background: #0d1e2a; border-color: #4af2; cursor: default; }
+  .ri-input::placeholder { color: #333; }
+
+  .ri-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .stat-box { background: #111; border: 1px solid #1e1e1e; border-radius: 8px; padding: 10px; }
+  .stat-label { font-size: 0.62rem; color: #444; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+  .stat-value { font-size: 1rem; font-weight: 700; color: #ccc; }
+
+  /* Elevation chart */
+  .elevation-box { background: #111; border: 1px solid #1e1e1e; border-radius: 8px; padding: 12px; margin-bottom: 14px; }
+  .elevation-box svg { width: 100%; height: 80px; display: block; }
+
+  /* Recommended sliders */
+  .rec-slider-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .rec-label { font-size: 0.78rem; color: #888; width: 140px; flex-shrink: 0; }
+  .rec-val { font-size: 0.82rem; font-weight: 600; color: #4af; width: 55px; text-align: right; }
+
+  .analyse-btn {
+    width: 100%; padding: 10px; border-radius: 8px; border: none;
+    background: #4af; color: #000; font-weight: 700; font-size: 0.85rem;
+    cursor: pointer; margin-bottom: 14px; transition: opacity 0.15s;
+  }
+  .analyse-btn:hover { opacity: 0.85; }
+
+  .apply-btn {
+    width: 100%; padding: 10px; border-radius: 8px;
+    border: 1px solid #333; background: #1a1a1a;
+    color: #aaa; font-size: 0.82rem; cursor: pointer; transition: all 0.2s;
+  }
+  .apply-btn:hover { border-color: #4af; color: #4af; }
+  .apply-btn.done { background: #1a4a1a; border-color: #4f4; color: #4f4; }
+
+  .risk-pill {
+    display: inline-block; padding: 2px 10px; border-radius: 10px;
+    font-size: 0.7rem; font-weight: 700; letter-spacing: 0.06em;
+  }
+  .risk-low  { background: #1a4a1a; color: #4f4; }
+  .risk-med  { background: #3a2a00; color: #fa4; }
+  .risk-high { background: #4a1a1a; color: #f64; }
+
+  .cs-overlay {
+    position: absolute; inset: 0; background: rgba(10,10,10,0.6);
+    backdrop-filter: blur(4px); border-radius: 12px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+  }
+  .cs-badge {
+    background: linear-gradient(135deg,#1a3a50,#0d2030); border: 1px solid #4af;
+    color: #4af; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.15em;
+    text-transform: uppercase; padding: 6px 18px; border-radius: 20px; box-shadow: 0 0 20px #4af3;
+  }
+  .cs-desc { font-size: 0.78rem; color: #666; text-align: center; max-width: 280px; line-height: 1.5; }
+  .try-beta-btn {
+    padding: 7px 20px; border-radius: 20px; border: 1px solid #555;
+    background: transparent; color: #999; font-size: 0.76rem; cursor: pointer;
+    transition: all 0.15s; letter-spacing: 0.06em;
+  }
+  .try-beta-btn:hover { border-color: #4af; color: #4af; }
+</style>
+</head>
+<body>
+
+<h1>Longboard Control</h1>
+<p class="subtitle">Configure damper settings, simulate, or push live to Arduino</p>
+
+<div class="layout">
+
+  <!-- ── LEFT COLUMN ── -->
+  <div class="left-col">
+
+    <!-- Settings -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Settings</span>
+        <button class="default-btn on" id="defaultBtn" onclick="toggleDefault()">Default ON</button>
+      </div>
+      <div class="slider-row">
+        <span class="slider-label">Trigger speed</span>
+        <input type="range" id="triggerSpeed" min="10" max="70" value="30" step="1" disabled>
+        <span class="slider-value locked" id="triggerSpeedVal">30 km/h</span>
+      </div>
+      <div class="slider-row">
+        <span class="slider-label">Max speed</span>
+        <input type="range" id="maxSpeed" min="20" max="100" value="50" step="1" disabled>
+        <span class="slider-value locked" id="maxSpeedVal">50 km/h</span>
+      </div>
+      <div class="slider-row">
+        <span class="slider-label">Max damper angle</span>
+        <input type="range" id="maxAngle" min="10" max="180" value="180" step="5" disabled>
+        <span class="slider-value locked" id="maxAngleVal">180°</span>
+      </div>
+      <div id="presetsSection" style="display:none">
+        <div class="presets">
+          <button class="preset-btn" onclick="applyPreset('street')">Street</button>
+          <button class="preset-btn" onclick="applyPreset('rough')">Rough</button>
+          <button class="preset-btn" onclick="applyPreset('downhill')">Downhill</button>
+          <button class="preset-btn" onclick="applyPreset('park')">Skate Park</button>
+        </div>
+        <div style="margin-top:9px;font-size:0.72rem;color:#444;" id="presetDesc"></div>
+      </div>
+    </div>
+
+    <!-- Test Mode -->
+    <div class="card">
+      <div class="card-header"><span class="card-title">Test Mode</span></div>
+      <div class="toggle-row">
+        <label class="toggle">
+          <input type="checkbox" id="testToggle" onchange="toggleTestMode()">
+          <div class="toggle-track"></div>
+        </label>
+        <span class="toggle-label">Simulate without Arduino</span>
+      </div>
+      <div id="testControls" style="display:none">
+        <div class="slider-row">
+          <span class="slider-label">Test speed</span>
+          <input type="range" id="testSpeed" min="0" max="100" value="0" step="1" oninput="updateSim()">
+          <span class="slider-value" id="testSpeedVal">0 km/h</span>
+        </div>
+      </div>
+      <div class="speed-display">
+        <div class="speed-big" id="speedBig">0</div>
+        <div class="speed-unit">km/h</div>
+      </div>
+      <div class="servo-grid">
+        <div class="servo-box">
+          <div class="servo-title">Servo 1 · Trigger</div>
+          <div class="indicator" id="s1indicator">OFF</div>
+          <div class="servo-status" id="s1status">Inactive</div>
+        </div>
+        <div class="servo-box">
+          <div class="servo-title">Servo 2 · Damper</div>
+          <div class="gauge-wrap">
+            <svg width="70" height="44" viewBox="0 0 80 50">
+              <path d="M8,46 A36,36 0 0,1 72,46" fill="none" stroke="#1e1e1e" stroke-width="6" stroke-linecap="round"/>
+              <path id="gaugeArc" d="M8,46 A36,36 0 0,1 72,46" fill="none" stroke="#4af" stroke-width="6" stroke-linecap="round" stroke-dasharray="113" stroke-dashoffset="113"/>
+              <circle id="gaugeKnob" cx="8" cy="46" r="5" fill="#4af"/>
+            </svg>
+          </div>
+          <div class="servo-angle" id="s2angle">0°</div>
+          <div class="servo-status" id="s2status">Soft</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Arduino -->
+    <div class="card">
+      <div class="card-header"><span class="card-title">Arduino</span></div>
+      <button class="connect-btn" id="connectBtn" onclick="toggleConnect()">
+        <span class="status-dot" id="statusDot"></span>Connect via USB
+      </button>
+      <button class="send-btn" id="sendBtn" onclick="sendToArduino()" disabled>Push Settings to Arduino</button>
+      <div class="log" id="log">Open in Chrome · USB cable required</div>
+    </div>
+
+  </div><!-- /left-col -->
+
+  <!-- ── RIGHT COLUMN: Route Intelligence ── -->
+  <div class="card" style="position:relative; overflow:hidden;">
+    <div class="card-header">
+      <span class="card-title">Route Intelligence</span>
+      <span class="ri-badge">Beta</span>
+    </div>
+
+    <!-- Beta content (hidden behind overlay until clicked) -->
+    <div id="betaContent">
+
+      <div class="ri-section">
+        <div class="ri-section-title">Coordinates — right-click anywhere on Google Maps → copy coordinates</div>
+        <div class="ri-inputs">
+          <div class="ri-input-group">
+            <label class="ri-label">Start coords</label>
+            <input class="ri-input" id="riCoordStart" type="text" placeholder="e.g. 51.5074, -0.1278" oninput="clearResults()">
+          </div>
+          <div class="ri-input-group">
+            <label class="ri-label">End coords</label>
+            <input class="ri-input" id="riCoordEnd" type="text" placeholder="e.g. 51.4994, -0.1247" oninput="clearResults()">
+          </div>
+        </div>
+        <div style="margin-top:8px;">
+          <label class="ri-label">Route type</label>
+          <select class="ri-input" id="riType" style="cursor:pointer;margin-top:4px;">
+            <option value="urban">Urban / Street</option>
+            <option value="hill">Hilly</option>
+            <option value="downhill">Steep Downhill</option>
+            <option value="mixed">Mixed</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Auto-fetched data (shown after fetch) -->
+      <div id="fetchedData" style="display:none">
+        <div class="ri-section">
+          <div class="ri-section-title">Fetched Route Data</div>
+          <div class="ri-stats" style="margin-bottom:0;">
+            <div class="stat-box"><div class="stat-label">Distance</div><div class="stat-value" id="fdDist">--</div></div>
+            <div class="stat-box"><div class="stat-label">Start elev.</div><div class="stat-value" id="fdElevS">--</div></div>
+            <div class="stat-box"><div class="stat-label">End elev.</div><div class="stat-value" id="fdElevE">--</div></div>
+            <div class="stat-box"><div class="stat-label">Lowest point</div><div class="stat-value" id="fdElevLow">--</div></div>
+            <div class="stat-box"><div class="stat-label">Elev. drop</div><div class="stat-value" id="fdDrop">--</div></div>
+            <div class="stat-box"><div class="stat-label">Max slope</div><div class="stat-value" id="fdSlope">--</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="fetchStatus" style="font-size:0.75rem;color:#555;text-align:center;margin-bottom:10px;min-height:18px;"></div>
+      <button class="analyse-btn" id="analyseBtn" onclick="fetchAndAnalyse()">Fetch Elevation &amp; Analyse</button>
+
+      <!-- Results (hidden until analysed) -->
+      <div id="riResults" style="display:none">
+
+        <div class="ri-section">
+          <div class="ri-section-title">Route Analysis</div>
+          <div class="ri-stats" style="margin-bottom:10px;">
+            <div class="stat-box">
+              <div class="stat-label">Est. max speed</div>
+              <div class="stat-value" id="rMaxSpd">--</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Avg downhill</div>
+              <div class="stat-value" id="rAvgSpd">--</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-label">Risk level</div>
+              <div class="stat-value" id="rRisk">--</div>
+            </div>
+          </div>
+          <div style="font-size:0.76rem;color:#555;line-height:1.6;background:#111;border:1px solid #1e1e1e;border-radius:8px;padding:10px;" id="rSummary"></div>
+        </div>
+
+        <!-- Elevation profile -->
+        <div class="elevation-box">
+          <div style="font-size:0.65rem;color:#444;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;">Elevation Profile</div>
+          <svg id="elevSvg" viewBox="0 0 320 80" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="elevGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#4af" stop-opacity="0.18"/>
+                <stop offset="100%" stop-color="#4af" stop-opacity="0"/>
+              </linearGradient>
+            </defs>
+            <path id="elevFill" d="" fill="url(#elevGrad)"/>
+            <path id="elevLine" d="" fill="none" stroke="#4af" stroke-width="1.5" stroke-linecap="round"/>
+            <rect id="dangerZone" x="0" y="0" width="0" height="80" fill="#f641" rx="2"/>
+          </svg>
+          <div style="display:flex;justify-content:space-between;margin-top:4px;">
+            <span style="font-size:0.63rem;color:#333;" id="elevLabelStart">Start</span>
+            <span style="font-size:0.63rem;color:#333;" id="elevLabelEnd">End</span>
+          </div>
+        </div>
+
+        <!-- Recommended settings -->
+        <div class="ri-section">
+          <div class="ri-section-title">Recommended Settings <span style="color:#4af9;font-size:0.6rem;">(adjustable)</span></div>
+          <div class="rec-slider-row">
+            <span class="rec-label">Trigger speed</span>
+            <input type="range" id="recTrigger" min="10" max="70" value="30" step="1" oninput="updateRecLabel('recTrigger','recTriggerVal', v=>v+' km/h')">
+            <span class="rec-val" id="recTriggerVal">30 km/h</span>
+          </div>
+          <div class="rec-slider-row">
+            <span class="rec-label">Max speed</span>
+            <input type="range" id="recMax" min="20" max="100" value="50" step="1" oninput="updateRecLabel('recMax','recMaxVal', v=>v+' km/h')">
+            <span class="rec-val" id="recMaxVal">50 km/h</span>
+          </div>
+          <div class="rec-slider-row">
+            <span class="rec-label">Max damper angle</span>
+            <input type="range" id="recAngle" min="10" max="180" value="180" step="5" oninput="updateRecLabel('recAngle','recAngleVal', v=>v+'°')">
+            <span class="rec-val" id="recAngleVal">180°</span>
+          </div>
+          <button class="apply-btn" id="applyBtn" onclick="applyRecommended()">Apply to Settings</button>
+        </div>
+
+      </div><!-- /riResults -->
+    </div><!-- /betaContent -->
+
+    <!-- Coming Soon overlay -->
+    <div class="cs-overlay" id="csOverlay">
+      <div class="cs-badge">Coming Soon</div>
+      <div class="cs-desc">Route-aware damping — enter your route details and the system calculates elevation drop, estimated speed from gravity, and recommends optimal damper settings.</div>
+      <button class="try-beta-btn" onclick="enterBeta()">Try Beta Demo</button>
+    </div>
+
+  </div><!-- /route card -->
+
+</div><!-- /layout -->
+
+<script>
+const DEFAULTS = { trigger: 30, max: 50, angle: 180 };
+const presets = {
+  street:   { trigger: 30, max: 50, angle: 120, desc: 'Smooth surfaces. Moderate damping 30–50 km/h.' },
+  rough:    { trigger: 20, max: 40, angle: 180, desc: 'Rough terrain. Aggressive damping from 20 km/h.' },
+  downhill: { trigger: 35, max: 65, angle: 180, desc: 'Downhill. High threshold, wide speed range.' },
+  park:     { trigger: 15, max: 30, angle: 90,  desc: 'Skate park. Low speed, gentle damping.' }
+};
+
+let isDefault = true, testMode = false;
+let port = null, writer = null, reader = null, readLoop = false, liveSpeed = 0;
+
+// ── Default toggle ─────────────────────────────────────
+function toggleDefault() {
+  isDefault = !isDefault;
+  const btn = document.getElementById('defaultBtn');
+  btn.textContent = isDefault ? 'Default ON' : 'Default OFF';
+  btn.className = 'default-btn' + (isDefault ? ' on' : '');
+  ['triggerSpeed','maxSpeed','maxAngle'].forEach(id => document.getElementById(id).disabled = isDefault);
+  document.querySelectorAll('.slider-value').forEach(el => el.classList.toggle('locked', isDefault));
+  document.getElementById('presetsSection').style.display = isDefault ? 'none' : 'block';
+  if (isDefault) {
+    setSlider('triggerSpeed','triggerSpeedVal', DEFAULTS.trigger, v=>v+' km/h');
+    setSlider('maxSpeed',    'maxSpeedVal',     DEFAULTS.max,     v=>v+' km/h');
+    setSlider('maxAngle',    'maxAngleVal',     DEFAULTS.angle,   v=>v+'°');
+    document.querySelectorAll('.preset-btn').forEach(b=>b.classList.remove('active'));
+    document.getElementById('presetDesc').textContent = '';
+    updateSim();
+  }
+}
+
+function initSliders() {
+  bindSlider('triggerSpeed','triggerSpeedVal', v=>v+' km/h');
+  bindSlider('maxSpeed',    'maxSpeedVal',     v=>v+' km/h');
+  bindSlider('maxAngle',    'maxAngleVal',     v=>v+'°');
+}
+function bindSlider(id, labelId, fmt) {
+  document.getElementById(id).oninput = () => {
+    document.getElementById(labelId).textContent = fmt(document.getElementById(id).value);
+    updateSim();
+  };
+}
+function setSlider(id, labelId, value, fmt) {
+  document.getElementById(id).value = value;
+  document.getElementById(labelId).textContent = fmt(value);
+}
+
+function applyPreset(name) {
+  if (isDefault) return;
+  const p = presets[name];
+  setSlider('triggerSpeed','triggerSpeedVal', p.trigger, v=>v+' km/h');
+  setSlider('maxSpeed',    'maxSpeedVal',     p.max,     v=>v+' km/h');
+  setSlider('maxAngle',    'maxAngleVal',     p.angle,   v=>v+'°');
+  document.getElementById('presetDesc').textContent = p.desc;
+  document.querySelectorAll('.preset-btn').forEach(b =>
+    b.classList.toggle('active', b.textContent.toLowerCase().replace(' ','')===name));
+  updateSim();
+}
+
+// ── Test mode ──────────────────────────────────────────
+function getSettings() {
+  return {
+    trigger: parseFloat(document.getElementById('triggerSpeed').value),
+    maxSpd:  parseFloat(document.getElementById('maxSpeed').value),
+    angle:   parseInt(document.getElementById('maxAngle').value),
+  };
+}
+function calcServos(speed) {
+  const s = getSettings();
+  const s1 = speed >= s.trigger;
+  let damper = 0;
+  if (s1) {
+    const clamped = Math.min(Math.max(speed, s.trigger), s.maxSpd);
+    damper = Math.round((clamped - s.trigger) / (s.maxSpd - s.trigger) * s.angle);
+  }
+  return { s1, damper };
+}
+function toggleTestMode() {
+  testMode = document.getElementById('testToggle').checked;
+  document.getElementById('testControls').style.display = testMode ? 'block' : 'none';
+  testMode ? updateSim() : updateDisplay(liveSpeed);
+}
+function updateSim() {
+  if (!testMode) return;
+  const speed = parseFloat(document.getElementById('testSpeed').value);
+  document.getElementById('testSpeedVal').textContent = speed + ' km/h';
+  updateDisplay(speed);
+}
+function updateDisplay(speed) {
+  document.getElementById('speedBig').textContent = Math.round(speed);
+  const { s1, damper } = calcServos(speed);
+  const s = getSettings();
+  const ind = document.getElementById('s1indicator');
+  ind.className = 'indicator' + (s1 ? ' on' : '');
+  ind.textContent = s1 ? 'ON' : 'OFF';
+  document.getElementById('s1status').textContent = s1 ? 'Active (90°)' : 'Inactive (0°)';
+  const pct = s.angle > 0 ? damper / s.angle : 0;
+  document.getElementById('gaugeArc').setAttribute('stroke-dashoffset', 113 * (1 - pct));
+  const rad = Math.PI * (1 - pct);
+  document.getElementById('gaugeKnob').setAttribute('cx', (40 - 36*Math.cos(rad)).toFixed(1));
+  document.getElementById('gaugeKnob').setAttribute('cy', (46 - 36*Math.sin(rad)).toFixed(1));
+  document.getElementById('s2angle').textContent = damper + '°';
+  document.getElementById('s2status').textContent = damper===0 ? 'Soft' : damper>=s.angle ? 'Max stiff' : 'Active';
+}
+
+// ── Arduino ────────────────────────────────────────────
+async function toggleConnect() {
+  if (port) { await disconnect(); return; }
+  try {
+    port = await navigator.serial.requestPort();
+    await port.open({ baudRate: 9600 });
+    writer = port.writable.getWriter();
+    setConnected(true); startReading(); log('Connected');
+  } catch(e) { log('Failed: ' + e.message); port = null; }
+}
+async function disconnect() {
+  readLoop = false;
+  try { if (reader) { await reader.cancel(); reader = null; } } catch(e) {}
+  try { if (writer) { writer.releaseLock(); writer = null; } } catch(e) {}
+  try { await port.close(); } catch(e) {}
+  port = null; setConnected(false); log('Disconnected');
+}
+function setConnected(on) {
+  const btn = document.getElementById('connectBtn');
+  btn.className = 'connect-btn' + (on ? ' connected' : '');
+  btn.innerHTML = `<span class="status-dot ${on?'on':''}"></span>${on?'Disconnect':'Connect via USB'}`;
+  document.getElementById('sendBtn').disabled = !on;
+}
+async function startReading() {
+  readLoop = true;
+  const dec = new TextDecoderStream();
+  port.readable.pipeTo(dec.writable);
+  reader = dec.readable.getReader();
+  let buf = '';
+  while (readLoop) {
+    try {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buf += value;
+      const lines = buf.split('\n'); buf = lines.pop();
+      for (const l of lines) parseLine(l.trim());
+    } catch(e) { break; }
+  }
+}
+function parseLine(line) {
+  const m = line.match(/S:([\d.]+),V1:(\d),D:(\d+)/);
+  if (!m) return;
+  liveSpeed = parseFloat(m[1]);
+  if (!testMode) updateDisplay(liveSpeed);
+  log('← ' + line);
+}
+async function send(cmd) {
+  if (!writer) return;
+  await writer.write(new TextEncoder().encode(cmd + '\n'));
+}
+async function sendToArduino() {
+  const s = getSettings();
+  await send('T:' + s.trigger);
+  await send('X:' + s.maxSpd);
+  await send('A:' + s.angle);
+  if (testMode) await send('M:' + document.getElementById('testSpeed').value);
+  else await send('L:');
+  log('Settings pushed to Arduino');
+}
+function log(msg) { document.getElementById('log').textContent = msg; }
+
+// ── Route Intelligence ─────────────────────────────────
+function enterBeta() {
+  document.getElementById('csOverlay').style.display = 'none';
+}
+
+function clearResults() {
+  document.getElementById('riResults').style.display = 'none';
+  document.getElementById('fetchedData').style.display = 'none';
+  document.getElementById('fetchStatus').textContent = '';
+  const btn = document.getElementById('applyBtn');
+  if (btn) { btn.className = 'apply-btn'; btn.textContent = 'Apply to Settings'; }
+}
+
+function updateRecLabel(sliderId, labelId, fmt) {
+  document.getElementById(labelId).textContent = fmt(document.getElementById(sliderId).value);
+}
+
+function parseCoord(str) {
+  const m = str.trim().match(/^(-?\d+\.?\d*)[,\s]+(-?\d+\.?\d*)$/);
+  if (!m) return null;
+  return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
+}
+
+function haversine(lat1, lng1, lat2, lng2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function interpolatePoints(c1, c2, n) {
+  const pts = [];
+  for (let i = 0; i <= n; i++) {
+    const t = i / n;
+    pts.push({ latitude: c1.lat + (c2.lat - c1.lat) * t, longitude: c1.lng + (c2.lng - c1.lng) * t });
+  }
+  return pts;
+}
+
+async function fetchAndAnalyse() {
+  const c1 = parseCoord(document.getElementById('riCoordStart').value);
+  const c2 = parseCoord(document.getElementById('riCoordEnd').value);
+
+  if (!c1 || !c2) {
+    setStatus('Paste valid coordinates from Google Maps (e.g. 51.5074, -0.1278)', '#f64');
+    return;
+  }
+
+  setStatus('Fetching elevation data...', '#fa4');
+  document.getElementById('analyseBtn').disabled = true;
+
+  const pts = interpolatePoints(c1, c2, 9); // 10 points along route
+  const body = JSON.stringify({ locations: pts });
+
+  let elevations;
+  try {
+    const res = await fetch('https://api.open-elevation.com/api/v1/lookup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body
+    });
+    const data = await res.json();
+    elevations = data.results.map(r => r.elevation);
+  } catch(e) {
+    setStatus('Elevation API unavailable — using estimated data', '#fa4');
+    // Fallback: estimate based on coord difference
+    const seed = Math.abs(c1.lat - c2.lat + c1.lng - c2.lng) * 1000 % 80;
+    elevations = pts.map((_,i) => 50 + seed - i * (seed/10) + Math.sin(i)*5);
+  }
+
+  document.getElementById('analyseBtn').disabled = false;
+
+  const dist    = haversine(c1.lat, c1.lng, c2.lat, c2.lng);
+  const elevS   = elevations[0];
+  const elevE   = elevations[elevations.length - 1];
+  const elevLow = Math.min(...elevations);
+  const elevHigh= Math.max(...elevations);
+  const drop    = Math.max(elevS - elevE, elevS - elevLow, 0);
+
+  // Slope: max gradient between any two adjacent points
+  const segDist = (dist * 1000) / (elevations.length - 1);
+  let maxSlope = 0;
+  for (let i = 1; i < elevations.length; i++) {
+    const grad = Math.abs(elevations[i] - elevations[i-1]) / segDist * 100;
+    if (grad > maxSlope) maxSlope = grad;
+  }
+
+  // Show fetched data
+  document.getElementById('fdDist').textContent   = dist.toFixed(2) + ' km';
+  document.getElementById('fdElevS').textContent  = elevS.toFixed(0) + ' m';
+  document.getElementById('fdElevE').textContent  = elevE.toFixed(0) + ' m';
+  document.getElementById('fdElevLow').textContent= elevLow.toFixed(0) + ' m';
+  document.getElementById('fdDrop').textContent   = drop.toFixed(0) + ' m';
+  document.getElementById('fdSlope').textContent  = maxSlope.toFixed(1) + '%';
+  document.getElementById('fetchedData').style.display = 'block';
+
+  // Physics: v = sqrt(2 * g * h * eff)
+  const type = document.getElementById('riType').value;
+  const eff  = { urban: 0.35, hill: 0.45, downhill: 0.55, mixed: 0.40 }[type];
+  const vmax = Math.min(Math.sqrt(2 * 9.8 * Math.max(drop, 1) * eff) * 3.6, 80);
+  const vavg = vmax * 0.65;
+
+  // Risk
+  const riskScore = (drop / Math.max(dist, 0.1)) * (maxSlope / 5) * (type==='downhill'?2:1);
+  const risk = riskScore > 10 ? 'High' : riskScore > 3 ? 'Medium' : 'Low';
+
+  // Recommended settings
+  const recTrigger = Math.max(15, Math.round(vmax * 0.65 / 5) * 5);
+  const recMax     = Math.min(80, Math.max(recTrigger + 10, Math.round(vmax / 5) * 5));
+  const recAngle   = drop > 60 ? 180 : drop > 30 ? 150 : drop > 10 ? 120 : 90;
+
+  const summaries = {
+    urban:    `${dist.toFixed(1)} km urban route with ${drop.toFixed(0)}m elevation drop. Max slope ${maxSlope.toFixed(1)}%. Gravity speed ~${vmax.toFixed(0)} km/h on steepest section.`,
+    hill:     `${dist.toFixed(1)} km hilly route. ${drop.toFixed(0)}m total drop, max grade ${maxSlope.toFixed(1)}%. Damper should engage early on descents.`,
+    downhill: `${dist.toFixed(1)} km downhill run. ${drop.toFixed(0)}m drop at up to ${maxSlope.toFixed(1)}% grade — gravity can push you to ~${vmax.toFixed(0)} km/h.`,
+    mixed:    `${dist.toFixed(1)} km mixed route. Optimised for steepest section: ${drop.toFixed(0)}m drop, ${maxSlope.toFixed(1)}% max grade.`
+  };
+
+  document.getElementById('rMaxSpd').textContent  = vmax.toFixed(0) + ' km/h';
+  document.getElementById('rAvgSpd').textContent  = vavg.toFixed(0) + ' km/h';
+  document.getElementById('rSummary').textContent = summaries[type];
+  document.getElementById('rRisk').innerHTML = `<span class="risk-pill risk-${risk.toLowerCase()}">${risk}</span>`;
+
+  drawElevation(elevations);
+
+  document.getElementById('elevLabelStart').textContent = document.getElementById('riCoordStart').value.trim();
+  document.getElementById('elevLabelEnd').textContent   = document.getElementById('riCoordEnd').value.trim();
+
+  setSlider('recTrigger','recTriggerVal', recTrigger, v=>v+' km/h');
+  setSlider('recMax',    'recMaxVal',     recMax,     v=>v+' km/h');
+  setSlider('recAngle',  'recAngleVal',   recAngle,   v=>v+'°');
+
+  document.getElementById('riResults').style.display = 'block';
+  setStatus('', '');
+}
+
+function setStatus(msg, color) {
+  const el = document.getElementById('fetchStatus');
+  el.textContent = msg;
+  el.style.color = color;
+}
+
+function drawElevation(elevations) {
+  const W = 320, H = 80;
+  const minE = Math.min(...elevations) - 5;
+  const maxE = Math.max(...elevations) + 5;
+  const toY  = e => H - ((e - minE) / (maxE - minE)) * (H - 12) - 4;
+
+  const pts = elevations.map((e, i) => [i / (elevations.length - 1) * W, toY(e)]);
+  const line = 'M' + pts.map(p => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' L');
+  const fill = line + ' L' + W + ',' + H + ' L0,' + H + ' Z';
+  document.getElementById('elevLine').setAttribute('d', line);
+  document.getElementById('elevFill').setAttribute('d', fill);
+
+  // Highlight steepest drop section
+  let maxDrop = 0, maxIdx = 0;
+  for (let i = 1; i < elevations.length; i++) {
+    const d = elevations[i-1] - elevations[i];
+    if (d > maxDrop) { maxDrop = d; maxIdx = i; }
+  }
+  const dz = document.getElementById('dangerZone');
+  if (maxDrop > 5) {
+    const x = ((maxIdx - 1) / (elevations.length - 1) * W).toFixed(1);
+    const w = (W / (elevations.length - 1)).toFixed(1);
+    dz.setAttribute('x', x); dz.setAttribute('width', w);
+  } else {
+    dz.setAttribute('width', '0');
+  }
+}
+
+function applyRecommended() {
+  const t = parseInt(document.getElementById('recTrigger').value);
+  const m = parseInt(document.getElementById('recMax').value);
+  const a = parseInt(document.getElementById('recAngle').value);
+  if (isDefault) toggleDefault();
+  setSlider('triggerSpeed','triggerSpeedVal', t, v=>v+' km/h');
+  setSlider('maxSpeed',    'maxSpeedVal',     m, v=>v+' km/h');
+  setSlider('maxAngle',    'maxAngleVal',     a, v=>v+'°');
+  updateSim();
+  const btn = document.getElementById('applyBtn');
+  btn.className = 'apply-btn done';
+  btn.textContent = 'Applied to Settings ✓';
+}
+
+// ── Init ───────────────────────────────────────────────
+initSliders();
+updateDisplay(0);
+if (!('serial' in navigator)) {
+  document.getElementById('connectBtn').disabled = true;
+  document.getElementById('log').textContent = 'Use Chrome or Edge for Arduino connection.';
+}
+</script>
+</body>
+</html>

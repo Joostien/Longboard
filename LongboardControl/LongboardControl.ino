@@ -16,9 +16,14 @@ int   maxDamperAngle = 180;   // max angle for servo 2
 float testSpeed      = -1.0;  // -1 = use real sensor
 
 // --- Fixed servo angles ---
-const int SERVO1_INACTIVE = 0;
-const int SERVO1_ACTIVE   = 90;
-const int SERVO2_MIN      = 0;
+const int SERVO1_INACTIVE  = 0;
+const int SERVO1_ACTIVE    = 35;  // initial activation angle
+const int SERVO1_SETTLE    = 30;  // settle angle after 500ms
+const int SERVO2_MIN       = 0;
+
+// --- Servo 1 state ---
+bool     servo1Active      = false;
+unsigned long servo1OnTime = 0;
 
 // --- Speed Calculation ---
 const unsigned long CALC_INTERVAL_MS = 500;
@@ -90,8 +95,19 @@ void loop() {
       speedKMH             = (revolutions * circumferenceM / elapsedSeconds) * 3.6;
     }
 
-    // Servo 1: binary trigger
-    servo1.write(speedKMH >= triggerSpeed ? SERVO1_ACTIVE : SERVO1_INACTIVE);
+    // Servo 1: snap to 35° on trigger, settle to 30° after 500ms
+    if (speedKMH >= triggerSpeed) {
+      if (!servo1Active) {
+        servo1.write(SERVO1_ACTIVE);
+        servo1Active  = true;
+        servo1OnTime  = now;
+      } else if (now - servo1OnTime >= 500) {
+        servo1.write(SERVO1_SETTLE);
+      }
+    } else {
+      servo1.write(SERVO1_INACTIVE);
+      servo1Active = false;
+    }
 
     // Servo 2: proportional damper (only active above trigger speed)
     int damperAngle = SERVO2_MIN;

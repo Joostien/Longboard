@@ -11,7 +11,7 @@
     min-height: 100vh; padding: 24px;
   }
   h1 { font-size: 1.6rem; font-weight: 600; color: #fff; margin-bottom: 4px; }
-  .subtitle { color: #555; font-size: 0.85rem; margin-bottom: 24px; }
+  .subtitle { color: #888; font-size: 0.85rem; margin-bottom: 24px; }
 
   .layout { display: grid; grid-template-columns: 380px 1fr; gap: 16px; max-width: 1100px; align-items: start; }
   .left-col { display: flex; flex-direction: column; gap: 16px; }
@@ -22,7 +22,7 @@
     border-radius: 12px; padding: 20px; position: relative;
   }
   .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
-  .card-title { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #555; }
+  .card-title { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #999; }
 
   /* Default btn */
   .default-btn {
@@ -34,11 +34,11 @@
 
   /* Sliders */
   .slider-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
-  .slider-label { font-size: 0.8rem; color: #aaa; width: 120px; flex-shrink: 0; }
+  .slider-label { font-size: 0.8rem; color: #ccc; width: 120px; flex-shrink: 0; }
   input[type=range] { flex: 1; accent-color: #4af; height: 4px; cursor: pointer; }
   input[type=range]:disabled { accent-color: #333; cursor: not-allowed; opacity: 0.4; }
   .slider-value { font-size: 0.82rem; font-weight: 600; color: #4af; width: 50px; text-align: right; }
-  .slider-value.locked { color: #555; }
+  .slider-value.locked { color: #888; }
 
   /* Presets */
   .presets { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 14px; padding-top: 14px; border-top: 1px solid #222; }
@@ -54,21 +54,21 @@
   .toggle input:checked + .toggle-track { background: #4af; }
   .toggle-track::after { content: ''; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; background: #fff; border-radius: 50%; transition: left 0.2s; }
   .toggle input:checked + .toggle-track::after { left: 21px; }
-  .toggle-label { font-size: 0.82rem; color: #aaa; }
+  .toggle-label { font-size: 0.82rem; color: #ccc; }
 
   /* Servo display */
   .servo-grid { display: flex; gap: 10px; }
   .servo-box { flex: 1; background: #111; border: 1px solid #222; border-radius: 8px; padding: 12px; text-align: center; }
-  .servo-title { font-size: 0.66rem; color: #444; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px; }
+  .servo-title { font-size: 0.66rem; color: #888; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px; }
   .indicator { width: 42px; height: 42px; border-radius: 50%; margin: 0 auto 6px; background: #1a1a1a; border: 2px solid #2a2a2a; transition: all 0.3s; display: flex; align-items: center; justify-content: center; font-size: 0.6rem; font-weight: 700; color: #444; }
   .indicator.on { background: #1a4a1a; border-color: #4f4; color: #4f4; box-shadow: 0 0 12px #4f44; }
   .gauge-wrap { width: 70px; height: 44px; margin: 0 auto 4px; overflow: visible; }
   .gauge-wrap svg { display: block; }
   .servo-angle { font-size: 1rem; font-weight: 700; color: #4af; }
-  .servo-status { font-size: 0.68rem; color: #444; margin-top: 2px; }
+  .servo-status { font-size: 0.68rem; color: #888; margin-top: 2px; }
   .speed-display { text-align: center; margin-bottom: 14px; }
   .speed-big { font-size: 2.6rem; font-weight: 700; color: #fff; line-height: 1; }
-  .speed-unit { font-size: 0.78rem; color: #444; margin-top: 3px; }
+  .speed-unit { font-size: 0.78rem; color: #888; margin-top: 3px; }
 
   /* Arduino */
   .connect-btn { width: 100%; padding: 9px; border-radius: 8px; border: 1px solid #2a2a2a; background: #141414; color: #888; font-size: 0.82rem; cursor: pointer; transition: all 0.15s; margin-bottom: 9px; }
@@ -79,7 +79,7 @@
   .send-btn { width: 100%; padding: 9px; border-radius: 8px; border: none; background: #4af; color: #000; font-size: 0.82rem; font-weight: 700; cursor: pointer; transition: opacity 0.15s; }
   .send-btn:hover { opacity: 0.85; }
   .send-btn:disabled { opacity: 0.25; cursor: not-allowed; }
-  .log { margin-top: 8px; font-size: 0.7rem; color: #444; text-align: center; }
+  .log { margin-top: 8px; font-size: 0.7rem; color: #777; text-align: center; }
 
   /* ── Route Intelligence ── */
   .ri-badge {
@@ -89,11 +89,11 @@
   }
 
   .ri-section { margin-bottom: 18px; }
-  .ri-section-title { font-size: 0.65rem; color: #444; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid #1e1e1e; }
+  .ri-section-title { font-size: 0.65rem; color: #bbb; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid #2a2a2a; }
 
   .ri-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .ri-input-group { display: flex; flex-direction: column; gap: 4px; }
-  .ri-label { font-size: 0.68rem; color: #555; text-transform: uppercase; letter-spacing: 0.08em; }
+  .ri-label { font-size: 0.68rem; color: #fff; text-transform: uppercase; letter-spacing: 0.08em; }
   .ri-input {
     padding: 8px 10px; border-radius: 7px; border: 1px solid #242424;
     background: #111; color: #ccc; font-size: 0.82rem; outline: none; width: 100%;
@@ -105,7 +105,7 @@
 
   .ri-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
   .stat-box { background: #111; border: 1px solid #1e1e1e; border-radius: 8px; padding: 10px; }
-  .stat-label { font-size: 0.62rem; color: #444; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+  .stat-label { font-size: 0.62rem; color: #888; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
   .stat-value { font-size: 1rem; font-weight: 700; color: #ccc; }
 
   /* Elevation chart */
@@ -114,7 +114,7 @@
 
   /* Recommended sliders */
   .rec-slider-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-  .rec-label { font-size: 0.78rem; color: #888; width: 140px; flex-shrink: 0; }
+  .rec-label { font-size: 0.78rem; color: #ccc; width: 140px; flex-shrink: 0; }
   .rec-val { font-size: 0.82rem; font-weight: 600; color: #4af; width: 55px; text-align: right; }
 
   .analyse-btn {
@@ -150,7 +150,7 @@
     color: #4af; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.15em;
     text-transform: uppercase; padding: 6px 18px; border-radius: 20px; box-shadow: 0 0 20px #4af3;
   }
-  .cs-desc { font-size: 0.78rem; color: #666; text-align: center; max-width: 280px; line-height: 1.5; }
+  .cs-desc { font-size: 0.78rem; color: #999; text-align: center; max-width: 280px; line-height: 1.5; }
   .try-beta-btn {
     padding: 7px 20px; border-radius: 20px; border: 1px solid #555;
     background: transparent; color: #999; font-size: 0.76rem; cursor: pointer;
